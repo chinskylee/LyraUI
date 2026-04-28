@@ -1,4 +1,4 @@
-const BASE = 'http://127.0.0.1:11434';
+let BASE = 'http://127.0.0.1:11434';
 let model = '', streaming = false;
 
 // Context window — the single source of truth for all messages.
@@ -22,6 +22,22 @@ const trBtn = document.getElementById('tr-btn');
 const trLang = document.getElementById('tr-lang');
 const trSrcLang = document.getElementById('tr-src-lang');
 
+// --- Port config elements ---
+const portModal = document.getElementById('port-modal');
+const portInput = document.getElementById('port-input');
+const portCancel = document.getElementById('port-cancel');
+const portSave = document.getElementById('port-save');
+const statusDiv = document.getElementById('status');
+const dotDiv = document.getElementById('dot');
+
+// --- Sidebar elements ---
+const sidebarTrigger = document.getElementById('sidebar-trigger');
+const sidebar = document.getElementById('sidebar');
+const sidebarHistory = document.getElementById('sidebar-history');
+const btnAnonymous = document.getElementById('btn-anonymous');
+const btnNewChat = document.getElementById('btn-new-chat');
+const btnSettings = document.getElementById('btn-settings');
+
 // --- Tab switching ---
 document.querySelectorAll('.tab').forEach(tab => {
   tab.onclick = () => {
@@ -42,8 +58,9 @@ document.querySelectorAll('.tab').forEach(tab => {
 
 // --- API helpers ---
 function bgFetch(path, opts = {}) {
+  const url = BASE + path;
   return new Promise((resolve, reject) => {
-    chrome.runtime.sendMessage({ type: 'fetch', path, opts }, res => {
+    chrome.runtime.sendMessage({ type: 'fetch', url, opts }, res => {
       if (chrome.runtime.lastError) reject(new Error(chrome.runtime.lastError.message));
       else if (res.error) reject(new Error(res.error));
       else resolve(res.text);
@@ -81,6 +98,34 @@ async function check() {
     status.textContent = 'Error: ' + e.message;
   }
 }
+
+// --- Port config ---
+let currentPort = '11434';
+statusDiv.style.cursor = 'pointer';
+statusDiv.title = 'Click to change port';
+statusDiv.onclick = () => {
+  portInput.value = currentPort;
+  portModal.classList.add('show');
+};
+portCancel.onclick = () => { portModal.classList.remove('show'); };
+portSave.onclick = () => {
+  const val = portInput.value.trim();
+  if (val && parseInt(val) > 0 && parseInt(val) <= 65535) {
+    currentPort = val;
+    // Update BASE URL
+    BASE = 'http://127.0.0.1:' + currentPort;
+    // Send message to background script to update declarativeNetRequest rule
+    chrome.runtime.sendMessage({ type: 'update-port', baseUrl: BASE }, (response) => {
+      // Re-check connection with new port
+      check();
+      portModal.classList.remove('show');
+    });
+  }
+};
+// Close modal on overlay click
+portModal.onclick = (e) => {
+  if (e.target === portModal) portModal.classList.remove('show');
+};
 
 modelSel.onchange = () => { model = modelSel.value; };
 
@@ -347,6 +392,38 @@ ${text}`;
 trBtn.onclick = doTranslate;
 trInput.onkeydown = e => {
   if (e.key === 'Enter' && e.ctrlKey) { e.preventDefault(); doTranslate(); }
+};
+
+// --- Sidebar ---
+// Show sidebar when mouse is near screen left edge (within 8px)
+document.addEventListener('mousemove', (e) => {
+  if (e.clientX <= 8) {
+    sidebar.classList.add('open');
+  } else if (e.clientX > 288) { // sidebar width (280px) + 8px trigger
+    sidebar.classList.remove('open');
+  }
+});
+sidebar.onmouseleave = (e) => {
+  // Only hide if mouse leaves sidebar to the right
+  if (e.clientX > 280) {
+    sidebar.classList.remove('open');
+  }
+};
+
+// Anonymous mode (default) - clear current chat display only
+btnAnonymous.onclick = () => {
+  // Clear display only, keep in-memory chatMessages for this session
+  msgs.innerHTML = '';
+};
+
+// New chat - coming soon
+btnNewChat.onclick = () => {
+  alert('New Chat feature coming soon!');
+};
+
+// Settings button (placeholder)
+btnSettings.onclick = () => {
+  alert('Settings panel coming soon!');
 };
 
 // --- Init ---
