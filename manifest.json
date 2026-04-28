@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "LyraUI",
+  "version": "1.0.0",
+  "description": "Minimal Chrome extension for chatting with local Ollama models",
+  "permissions": [
+    "storage",
+    "proxy",
+    "declarativeNetRequest"
+  ],
+  "host_permissions": [
+    "http://127.0.0.1:11434/*"
+  ],
+  "action": {
+    "default_title": "Open Ollama Chat"
+  },
+  "background": {
+    "service_worker": "bg.js"
+  },
+  "icons": {
+    "16": "icon.png"
+  }
+}
