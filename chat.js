@@ -20,6 +20,7 @@ const trInput = document.getElementById('tr-input');
 const trOutput = document.getElementById('tr-output');
 const trBtn = document.getElementById('tr-btn');
 const trLang = document.getElementById('tr-lang');
+const trSrcLang = document.getElementById('tr-src-lang');
 
 // --- Tab switching ---
 document.querySelectorAll('.tab').forEach(tab => {
@@ -272,10 +273,45 @@ async function doTranslate() {
   streaming = true;
   trBtn.disabled = true;
   trOutput.textContent = '';
-  const target = trLang.value;
-  const srcLabel = target === 'auto' ? 'the language used in the text' : target;
 
-  const prompt = `Translate the following text into ${srcLabel}. Only output the translation, nothing else:\n\n${text}`;
+  const srcLang = trSrcLang.value;
+  const targetLang = trLang.value;
+
+  // Language code mapping
+  const langCodeMap = {
+    'Chinese': 'zh',
+    'English': 'en',
+    'Japanese': 'ja',
+    'Korean': 'ko',
+    'French': 'fr',
+    'German': 'de',
+    'Spanish': 'es',
+    'Russian': 'ru',
+    'Arabic': 'ar',
+    'Thai': 'th',
+    'Vietnamese': 'vi',
+    'auto': 'auto'
+  };
+
+  // Handle source language
+  let sourceLangName, sourceLangCode;
+  if (srcLang === 'auto') {
+    sourceLangName = 'auto-detected source language';
+    sourceLangCode = 'auto';
+  } else {
+    sourceLangName = srcLang;
+    sourceLangCode = langCodeMap[srcLang] || 'unknown';
+  }
+
+  // Handle target language
+  const targetLangName = targetLang;
+  const targetLangCode = langCodeMap[targetLang] || 'unknown';
+
+  // Construct prompt following translategemma official format
+  const prompt = `You are a professional ${sourceLangName} (${sourceLangCode}) to ${targetLangName} (${targetLangCode}) translator. Your goal is to accurately convey the meaning and nuances of the original ${sourceLangName} text while adhering to ${targetLangName} grammar, vocabulary, and cultural sensitivities.
+Produce only the ${targetLangName} translation, without any additional explanations or commentary. Please translate the following ${sourceLangName} text into ${targetLangName}:
+
+${text}`;
 
   try {
     const body = JSON.stringify({model, messages: [{role:'user', content:prompt}], stream: true});
