@@ -49,6 +49,10 @@
 | Switch model | Dropdown in header |
 | Translate | Switch to **Translate** tab, `Ctrl + Enter` to run |
 
+### Translation
+
+The Translate panel supports 12 languages with stream output. For best results, we recommend using **translategemma series models**, e.g., `translategemma:4b` for balanced speed and quality. The prompt follows the official translategemma format with source language selection (default: auto-detect).
+
 ## Tech Stack
 
 - Manifest V3 (service worker + `declarativeNetRequest`)

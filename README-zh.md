@@ -49,6 +49,10 @@
 | 切换模型       | 顶部下拉菜单                           |
 | 翻译           | 切换到 **Translate** 标签，`Ctrl + Enter` 执行 |
 
+### 翻译
+
+翻译面板支持 12 种语言，流式输出结果。推荐使用 **translategemma 系列模型** 以获得最佳效果，例如 `translategemma:4b` 兼顾速度和质量。翻译提示词遵循 translategemma 官方格式，支持源语言选择（默认自动识别）。
+
 ## 技术栈
 
 - Manifest V3（Service Worker + `declarativeNetRequest`）
