@@ -66,8 +66,9 @@
   <!-- Translate -->
   <div id="translate-panel">
     <div class="tr-row">
-      <label>Target language</label>
-      <select id="tr-lang">
+      <label>Source language</label>
+      <select id="tr-src-lang">
+        <option value="auto" selected>Auto-detect (自动识别)</option>
         <option value="Chinese">Chinese (中文)</option>
         <option value="English">English</option>
         <option value="Japanese">Japanese (日本語)</option>
@@ -79,7 +80,21 @@
         <option value="Arabic">Arabic</option>
         <option value="Thai">Thai</option>
         <option value="Vietnamese">Vietnamese</option>
-        <option value="auto">Auto-detect</option>
+      </select>
+      <span style="color:#666;font-size:13px;">→</span>
+      <label>Target language</label>
+      <select id="tr-lang">
+        <option value="Chinese" selected>Chinese (中文)</option>
+        <option value="English">English</option>
+        <option value="Japanese">Japanese (日本語)</option>
+        <option value="Korean">Korean (한국어)</option>
+        <option value="French">French</option>
+        <option value="German">German</option>
+        <option value="Spanish">Spanish</option>
+        <option value="Russian">Russian</option>
+        <option value="Arabic">Arabic</option>
+        <option value="Thai">Thai</option>
+        <option value="Vietnamese">Vietnamese</option>
       </select>
     </div>
     <div class="tr-panes">
