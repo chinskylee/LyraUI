@@ -53,6 +53,16 @@
 
 翻译面板支持 12 种语言，流式输出结果。推荐使用 **translategemma 系列模型** 以获得最佳效果，例如 `translategemma:4b` 兼顾速度和质量。翻译提示词遵循 translategemma 官方格式，支持源语言选择（默认自动识别）。
 
+## 示例
+
+### 与Gemma 4对话
+![与Gemma 4对话](demo/chat-demo.png)
+*聊天页面向Gemma 4:2b模型问好的示例*
+
+### 翻译博客引言
+![翻译博客引言](demo/translate-demo.png)
+*翻译我的博客文章引言的示例*
+
 ## 技术栈
 
 - Manifest V3（Service Worker + `declarativeNetRequest`）

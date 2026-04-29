@@ -53,6 +53,16 @@
 
 The Translate panel supports 12 languages with stream output. For best results, we recommend using **translategemma series models**, e.g., `translategemma:4b` for balanced speed and quality. The prompt follows the official translategemma format with source language selection (default: auto-detect).
 
+## Examples
+
+### Chat with Gemma 4
+![Chat with Gemma 4](demo/chat-demo.png)
+*Chat interface greeting Gemma 4:2b model*
+
+### Translate Blog Introduction
+![Translate Blog Intro](demo/translate-demo.png)
+*Translating the introduction of my blog post*
+
 ## Tech Stack
 
 - Manifest V3 (service worker + `declarativeNetRequest`)
