@@ -10,6 +10,7 @@ function renderMarkdown(md) {
     return '<pre><code class="language-' + (lang || '') + '">' + code.trim() + '</code></pre>';
   });
   // Headers
+  html = html.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
   html = html.replace(/^## (.*)$/gm, '<h2>$1</h2>');
   html = html.replace(/^# (.*)$/gm, '<h1>$1</h1>');
