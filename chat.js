@@ -223,6 +223,11 @@ function createThinkingBlock(parent) {
       expanded = false;
       body.style.display = 'none';
       header.textContent = 'Thought for ' + formatTime(time) + ' ▼';
+      // 折叠后调整滚动位置到新的底部，避免滚动错乱
+      const msgsContainer = wrapper.parentElement;
+      if (msgsContainer) {
+        msgsContainer.scrollTop = msgsContainer.scrollHeight;
+      }
     },
     setFinal() {
       if (!folded) {
