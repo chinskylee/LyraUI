@@ -9,6 +9,39 @@ function renderMarkdown(md) {
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, function(_, lang, code) {
     return '<pre><code class="language-' + (lang || '') + '">' + code.trim() + '</code></pre>';
   });
+  // Tables
+  html = html.replace(/((?:^.*\|.*$\n?)+)/gm, function(match) {
+    const lines = match.trim().split('\n').filter(l => l.trim());
+    if (lines.length < 2) return match;
+    // Check if second line is a separator (contains only -, |, :, spaces)
+    const sepLine = lines[1];
+    const isSep = /^[\s|:-]+$/.test(sepLine) && /-/.test(sepLine);
+    if (!isSep) return match;
+    // Parse headers (first line)
+    const headers = lines[0].split('|').map(h => h.trim()).filter(h => h);
+    // Parse body lines (after separator)
+    const bodyLines = lines.slice(2);
+    let tableHtml = '<table>';
+    // Table header
+    tableHtml += '<thead><tr>';
+    headers.forEach(h => {
+      tableHtml += `<th>${h}</th>`;
+    });
+    tableHtml += '</tr></thead>';
+    // Table body
+    tableHtml += '<tbody>';
+    bodyLines.forEach(line => {
+      const cells = line.split('|').map(c => c.trim()).filter(c => c);
+      tableHtml += '<tr>';
+      // Align cells with headers count
+      for (let i = 0; i < headers.length; i++) {
+        tableHtml += `<td>${cells[i] || ''}</td>`;
+      }
+      tableHtml += '</tr>';
+    });
+    tableHtml += '</tbody></table>';
+    return tableHtml;
+  });
   // Headers
   html = html.replace(/^#### (.*)$/gm, '<h4>$1</h4>');
   html = html.replace(/^### (.*)$/gm, '<h3>$1</h3>');
