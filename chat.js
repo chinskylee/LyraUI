@@ -223,6 +223,11 @@ function createThinkingBlock(parent) {
       expanded = false;
       body.style.display = 'none';
       header.textContent = 'Thought for ' + formatTime(time) + ' ▼';
+      // 折叠后调整滚动位置到新的底部，避免滚动错乱
+      const msgsContainer = wrapper.parentElement;
+      if (msgsContainer) {
+        msgsContainer.scrollTop = msgsContainer.scrollHeight;
+      }
     },
     setFinal() {
       if (!folded) {
@@ -273,7 +278,13 @@ async function sendMsg() {
     },
     (content) => {
       assistantContent = content;
-      contentDiv.textContent = content;
+      // 实时渲染Markdown为HTML
+      const html = renderMarkdown(content);
+      contentDiv.innerHTML = html;
+      // 渲染其中的KaTeX公式
+      renderFormulas(contentDiv);
+      // 保持滚动到最新内容
+      msgs.scrollTop = msgs.scrollHeight;
     },
     (err) => {
       contentDiv.textContent = 'Error: ' + err;
