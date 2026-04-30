@@ -273,7 +273,13 @@ async function sendMsg() {
     },
     (content) => {
       assistantContent = content;
-      contentDiv.textContent = content;
+      // 实时渲染Markdown为HTML
+      const html = renderMarkdown(content);
+      contentDiv.innerHTML = html;
+      // 渲染其中的KaTeX公式
+      renderFormulas(contentDiv);
+      // 保持滚动到最新内容
+      msgs.scrollTop = msgs.scrollHeight;
     },
     (err) => {
       contentDiv.textContent = 'Error: ' + err;
