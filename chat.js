@@ -348,7 +348,14 @@ async function sendMsg() {
       msgs.scrollTop = msgs.scrollHeight;
     },
     (err) => {
-      contentDiv.textContent = 'Error: ' + err;
+      let errorMsg = 'Error: ' + err;
+      // Provide helpful message for cloud model subscription errors
+      if (err.includes('403') && err.includes('subscription')) {
+        errorMsg = 'Error: 此cloud模型需要付费订阅。请访问 https://ollama.com/upgrade 升级您的ollama账号，或切换到其他免费模型（如gemma）。';
+      } else if (err.includes('403')) {
+        errorMsg = 'Error: 访问被拒绝(403)。如果是cloud模型，请确保已通过 `ollama signin` 登录。';
+      }
+      contentDiv.textContent = errorMsg;
       contentDiv.className = 'msg error';
     },
     () => {
@@ -464,7 +471,14 @@ ${text}`;
       }
     }
   } catch (e) {
-    trOutput.textContent = 'Error: ' + e.message;
+    let errorMsg = 'Error: ' + e.message;
+    // Provide helpful message for cloud model subscription errors
+    if (e.message.includes('403') && e.message.includes('subscription')) {
+      errorMsg = 'Error: 此cloud模型需要付费订阅。请访问 https://ollama.com/upgrade 升级您的ollama账号，或切换到其他免费模型（如gemma）。';
+    } else if (e.message.includes('403')) {
+      errorMsg = 'Error: 访问被拒绝(403)。如果是cloud模型，请确保已通过 `ollama signin` 登录。';
+    }
+    trOutput.textContent = errorMsg;
   } finally {
     streaming = false;
     trBtn.disabled = false;
