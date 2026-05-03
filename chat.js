@@ -1,5 +1,6 @@
 let BASE = 'http://127.0.0.1:11434';
 let model = '', streaming = false;
+let modelSupportsThinking = false;
 
 // Context window — the single source of truth for all messages.
 // Each entry: { role: 'user' | 'assistant', content: string }
@@ -38,6 +39,10 @@ const btnAnonymous = document.getElementById('btn-anonymous');
 const btnNewChat = document.getElementById('btn-new-chat');
 const btnSettings = document.getElementById('btn-settings');
 
+// --- Thinking toggle elements ---
+const thinkingToggle = document.getElementById('thinking-toggle');
+const thinkingCheckbox = document.getElementById('thinking-checkbox');
+
 // --- Tab switching ---
 document.querySelectorAll('.tab').forEach(tab => {
   tab.onclick = () => {
@@ -48,10 +53,16 @@ document.querySelectorAll('.tab').forEach(tab => {
       msgs.style.display = 'flex';
       chatInput.style.display = 'flex';
       translatePanel.style.display = 'none';
+      // Show thinking toggle if model supports it
+      if (modelSupportsThinking) {
+        thinkingToggle.style.display = 'flex';
+      }
     } else {
       msgs.style.display = 'none';
       chatInput.style.display = 'none';
       translatePanel.style.display = 'flex';
+      // Hide thinking toggle in translate mode
+      thinkingToggle.style.display = 'none';
     }
   };
 });
@@ -86,13 +97,21 @@ async function check() {
     dot.className = 'dot green';
     status.textContent = 'Connected';
     modelSel.innerHTML = '';
-    (d.models || []).forEach(m => {
+    // Filter out cloud models (those ending with :cloud)
+    const localModels = (d.models || []).filter(m => !m.name.endsWith(':cloud'));
+    localModels.forEach(m => {
       const o = document.createElement('option');
       o.value = m.name;
       o.textContent = m.name;
       modelSel.appendChild(o);
     });
-    if (d.models?.length) { model = d.models[0].name; send.disabled = false; trBtn.disabled = false; }
+    if (localModels.length) {
+      model = localModels[0].name;
+      send.disabled = false;
+      trBtn.disabled = false;
+      // Check thinking capability for the first model
+      checkModelThinkingCapability(model);
+    }
   } catch (e) {
     dot.className = 'dot red';
     status.textContent = 'Error: ' + e.message;
@@ -127,7 +146,44 @@ portModal.onclick = (e) => {
   if (e.target === portModal) portModal.classList.remove('show');
 };
 
-modelSel.onchange = () => { model = modelSel.value; };
+modelSel.onchange = () => {
+  model = modelSel.value;
+  checkModelThinkingCapability(model);
+};
+
+// --- Check if model supports thinking ---
+async function checkModelThinkingCapability(modelName) {
+  if (!modelName) {
+    thinkingToggle.style.display = 'none';
+    modelSupportsThinking = false;
+    return;
+  }
+
+  try {
+    const body = JSON.stringify({ model: modelName });
+    const txt = await bgFetch('/api/show', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body
+    });
+    const data = JSON.parse(txt);
+    const capabilities = data.capabilities || [];
+    modelSupportsThinking = capabilities.includes('thinking');
+
+    if (modelSupportsThinking) {
+      thinkingToggle.style.display = 'flex';
+      // Default to enabled for thinking-capable models
+      thinkingCheckbox.checked = true;
+    } else {
+      thinkingToggle.style.display = 'none';
+      thinkingCheckbox.checked = false;
+    }
+  } catch (e) {
+    console.error('Failed to check model capabilities:', e);
+    thinkingToggle.style.display = 'none';
+    modelSupportsThinking = false;
+  }
+}
 
 // --- Streaming response handler ---
 function createStreamHandler(onThinking, onContent, onError, onDone) {
@@ -262,7 +318,12 @@ async function sendMsg() {
   contentDiv.className = 'msg assistant';
   contentDiv.style.cssText = 'margin-top:0;';
 
-  const thinkBlock = createThinkingBlock(wrapper);
+  // Only create thinking block if thinking is enabled
+  const isThinkingEnabled = modelSupportsThinking && thinkingCheckbox.checked;
+  let thinkBlock = null;
+  if (isThinkingEnabled) {
+    thinkBlock = createThinkingBlock(wrapper);
+  }
   wrapper.appendChild(contentDiv);
   msgs.appendChild(wrapper);
 
@@ -270,10 +331,12 @@ async function sendMsg() {
 
   const handler = createStreamHandler(
     (thinking, time, fold) => {
-      thinkBlock.updateThinking(thinking);
-      if (fold) {
-        thinkBlock.fold(time);
-        thinkDone = true;
+      if (thinkBlock) {
+        thinkBlock.updateThinking(thinking);
+        if (fold) {
+          thinkBlock.fold(time);
+          thinkDone = true;
+        }
       }
     },
     (content) => {
@@ -287,11 +350,18 @@ async function sendMsg() {
       msgs.scrollTop = msgs.scrollHeight;
     },
     (err) => {
-      contentDiv.textContent = 'Error: ' + err;
+      let errorMsg = 'Error: ' + err;
+      // Provide helpful message for cloud model subscription errors
+      if (err.includes('403') && err.includes('subscription')) {
+        errorMsg = 'Error: 此cloud模型需要付费订阅。请访问 https://ollama.com/upgrade 升级您的ollama账号，或切换到其他免费模型（如gemma）。';
+      } else if (err.includes('403')) {
+        errorMsg = 'Error: 访问被拒绝(403)。如果是cloud模型，请确保已通过 `ollama signin` 登录。';
+      }
+      contentDiv.textContent = errorMsg;
       contentDiv.className = 'msg error';
     },
     () => {
-      if (!thinkDone) thinkBlock.setFinal();
+      if (thinkBlock && !thinkDone) thinkBlock.setFinal();
       // Store complete assistant reply in context for the next turn
       if (assistantContent && contentDiv.className !== 'msg error') {
         chatMessages.push({ role: 'assistant', content: assistantContent });
@@ -305,7 +375,12 @@ async function sendMsg() {
   );
 
   try {
-    const body = JSON.stringify({ model, messages: chatMessages, stream: true });
+    const requestBody = { model, messages: chatMessages, stream: true };
+    // Only enable thinking if model supports it and user has it enabled
+    if (modelSupportsThinking && thinkingCheckbox.checked) {
+      requestBody.think = true;
+    }
+    const body = JSON.stringify(requestBody);
     const reader = await streamFetch('/api/chat', body);
     handler.run(reader);
   } catch (e) {
@@ -370,7 +445,12 @@ Produce only the ${targetLangName} translation, without any additional explanati
 ${text}`;
 
   try {
-    const body = JSON.stringify({model, messages: [{role:'user', content:prompt}], stream: true});
+    const requestBody = {model, messages: [{role:'user', content:prompt}], stream: true};
+    // Disable thinking for translate panel
+    if (modelSupportsThinking) {
+      requestBody.think = false;
+    }
+    const body = JSON.stringify(requestBody);
     const reader = await streamFetch('/api/chat', body);
     const dec = new TextDecoder();
     let buf = '', respText = '';
@@ -393,7 +473,14 @@ ${text}`;
       }
     }
   } catch (e) {
-    trOutput.textContent = 'Error: ' + e.message;
+    let errorMsg = 'Error: ' + e.message;
+    // Provide helpful message for cloud model subscription errors
+    if (e.message.includes('403') && e.message.includes('subscription')) {
+      errorMsg = 'Error: 此cloud模型需要付费订阅。请访问 https://ollama.com/upgrade 升级您的ollama账号，或切换到其他免费模型（如gemma）。';
+    } else if (e.message.includes('403')) {
+      errorMsg = 'Error: 访问被拒绝(403)。如果是cloud模型，请确保已通过 `ollama signin` 登录。';
+    }
+    trOutput.textContent = errorMsg;
   } finally {
     streaming = false;
     trBtn.disabled = false;
