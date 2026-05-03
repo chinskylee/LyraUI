@@ -1,5 +1,6 @@
 let BASE = 'http://127.0.0.1:11434';
 let model = '', streaming = false;
+let modelSupportsThinking = false;
 
 // Context window — the single source of truth for all messages.
 // Each entry: { role: 'user' | 'assistant', content: string }
@@ -37,6 +38,10 @@ const sidebarHistory = document.getElementById('sidebar-history');
 const btnAnonymous = document.getElementById('btn-anonymous');
 const btnNewChat = document.getElementById('btn-new-chat');
 const btnSettings = document.getElementById('btn-settings');
+
+// --- Thinking toggle elements ---
+const thinkingToggle = document.getElementById('thinking-toggle');
+const thinkingCheckbox = document.getElementById('thinking-checkbox');
 
 // --- Tab switching ---
 document.querySelectorAll('.tab').forEach(tab => {
@@ -92,7 +97,13 @@ async function check() {
       o.textContent = m.name;
       modelSel.appendChild(o);
     });
-    if (d.models?.length) { model = d.models[0].name; send.disabled = false; trBtn.disabled = false; }
+    if (d.models?.length) {
+      model = d.models[0].name;
+      send.disabled = false;
+      trBtn.disabled = false;
+      // Check thinking capability for the first model
+      checkModelThinkingCapability(model);
+    }
   } catch (e) {
     dot.className = 'dot red';
     status.textContent = 'Error: ' + e.message;
@@ -127,7 +138,44 @@ portModal.onclick = (e) => {
   if (e.target === portModal) portModal.classList.remove('show');
 };
 
-modelSel.onchange = () => { model = modelSel.value; };
+modelSel.onchange = () => {
+  model = modelSel.value;
+  checkModelThinkingCapability(model);
+};
+
+// --- Check if model supports thinking ---
+async function checkModelThinkingCapability(modelName) {
+  if (!modelName) {
+    thinkingToggle.style.display = 'none';
+    modelSupportsThinking = false;
+    return;
+  }
+
+  try {
+    const body = JSON.stringify({ model: modelName });
+    const txt = await bgFetch('/api/show', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body
+    });
+    const data = JSON.parse(txt);
+    const capabilities = data.capabilities || [];
+    modelSupportsThinking = capabilities.includes('thinking');
+
+    if (modelSupportsThinking) {
+      thinkingToggle.style.display = 'flex';
+      // Default to enabled for thinking-capable models
+      thinkingCheckbox.checked = true;
+    } else {
+      thinkingToggle.style.display = 'none';
+      thinkingCheckbox.checked = false;
+    }
+  } catch (e) {
+    console.error('Failed to check model capabilities:', e);
+    thinkingToggle.style.display = 'none';
+    modelSupportsThinking = false;
+  }
+}
 
 // --- Streaming response handler ---
 function createStreamHandler(onThinking, onContent, onError, onDone) {
@@ -262,7 +310,12 @@ async function sendMsg() {
   contentDiv.className = 'msg assistant';
   contentDiv.style.cssText = 'margin-top:0;';
 
-  const thinkBlock = createThinkingBlock(wrapper);
+  // Only create thinking block if thinking is enabled
+  const isThinkingEnabled = modelSupportsThinking && thinkingCheckbox.checked;
+  let thinkBlock = null;
+  if (isThinkingEnabled) {
+    thinkBlock = createThinkingBlock(wrapper);
+  }
   wrapper.appendChild(contentDiv);
   msgs.appendChild(wrapper);
 
@@ -270,10 +323,12 @@ async function sendMsg() {
 
   const handler = createStreamHandler(
     (thinking, time, fold) => {
-      thinkBlock.updateThinking(thinking);
-      if (fold) {
-        thinkBlock.fold(time);
-        thinkDone = true;
+      if (thinkBlock) {
+        thinkBlock.updateThinking(thinking);
+        if (fold) {
+          thinkBlock.fold(time);
+          thinkDone = true;
+        }
       }
     },
     (content) => {
@@ -291,7 +346,7 @@ async function sendMsg() {
       contentDiv.className = 'msg error';
     },
     () => {
-      if (!thinkDone) thinkBlock.setFinal();
+      if (thinkBlock && !thinkDone) thinkBlock.setFinal();
       // Store complete assistant reply in context for the next turn
       if (assistantContent && contentDiv.className !== 'msg error') {
         chatMessages.push({ role: 'assistant', content: assistantContent });
@@ -305,7 +360,12 @@ async function sendMsg() {
   );
 
   try {
-    const body = JSON.stringify({ model, messages: chatMessages, stream: true });
+    const requestBody = { model, messages: chatMessages, stream: true };
+    // Only enable thinking if model supports it and user has it enabled
+    if (modelSupportsThinking && thinkingCheckbox.checked) {
+      requestBody.think = true;
+    }
+    const body = JSON.stringify(requestBody);
     const reader = await streamFetch('/api/chat', body);
     handler.run(reader);
   } catch (e) {
@@ -370,7 +430,12 @@ Produce only the ${targetLangName} translation, without any additional explanati
 ${text}`;
 
   try {
-    const body = JSON.stringify({model, messages: [{role:'user', content:prompt}], stream: true});
+    const requestBody = {model, messages: [{role:'user', content:prompt}], stream: true};
+    // Disable thinking for translate panel
+    if (modelSupportsThinking) {
+      requestBody.think = false;
+    }
+    const body = JSON.stringify(requestBody);
     const reader = await streamFetch('/api/chat', body);
     const dec = new TextDecoder();
     let buf = '', respText = '';
