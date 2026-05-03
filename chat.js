@@ -53,10 +53,16 @@ document.querySelectorAll('.tab').forEach(tab => {
       msgs.style.display = 'flex';
       chatInput.style.display = 'flex';
       translatePanel.style.display = 'none';
+      // Show thinking toggle if model supports it
+      if (modelSupportsThinking) {
+        thinkingToggle.style.display = 'flex';
+      }
     } else {
       msgs.style.display = 'none';
       chatInput.style.display = 'none';
       translatePanel.style.display = 'flex';
+      // Hide thinking toggle in translate mode
+      thinkingToggle.style.display = 'none';
     }
   };
 });
