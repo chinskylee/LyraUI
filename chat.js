@@ -97,14 +97,16 @@ async function check() {
     dot.className = 'dot green';
     status.textContent = 'Connected';
     modelSel.innerHTML = '';
-    (d.models || []).forEach(m => {
+    // Filter out cloud models (those ending with :cloud)
+    const localModels = (d.models || []).filter(m => !m.name.endsWith(':cloud'));
+    localModels.forEach(m => {
       const o = document.createElement('option');
       o.value = m.name;
       o.textContent = m.name;
       modelSel.appendChild(o);
     });
-    if (d.models?.length) {
-      model = d.models[0].name;
+    if (localModels.length) {
+      model = localModels[0].name;
       send.disabled = false;
       trBtn.disabled = false;
       // Check thinking capability for the first model
