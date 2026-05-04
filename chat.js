@@ -171,7 +171,9 @@ async function checkModelThinkingCapability(modelName) {
     modelSupportsThinking = capabilities.includes('thinking');
 
     if (modelSupportsThinking) {
-      thinkingToggle.style.display = 'flex';
+      // Only show thinking toggle if currently in chat mode
+      const isTranslateMode = translatePanel.style.display === 'flex';
+      thinkingToggle.style.display = isTranslateMode ? 'none' : 'flex';
       // Default to enabled for thinking-capable models
       thinkingCheckbox.checked = true;
     } else {
