@@ -18,6 +18,7 @@
 
 - **Streaming Chat** — Real-time token streaming with context memory
 - **Thinking Preview** — Expandable "thinking" block for reasoning models (DeepSeek, QwQ, etc.)
+- **LaTeX Rendering** — Beautiful math formula rendering with KaTeX
 - **Translate Panel** — Built-in translation with 12 languages, stream output
 - **Zero Config** — Detects all local Ollama models automatically
 - **Lightweight** — Vanilla JS with no build step and no framework dependency
@@ -55,13 +56,13 @@ The Translate panel supports 12 languages with stream output. For best results, 
 
 ## Examples
 
-### Chat with Gemma 4
-![Chat with Gemma 4](demo/chat-demo.png)
-*Chat interface greeting Gemma 4:2b model*
+### Chat with Thinking & LaTeX
+![Chat with Thinking & LaTeX](demo/chat-thinking-latex.png)
+*Chat interface with thinking process preview and LaTeX formula rendering*
 
-### Translate Blog Introduction
-![Translate Blog Intro](demo/translate-demo.png)
-*Translating the introduction of my blog post*
+### Translation
+![Translation](demo/translate.png)
+*Translation panel with multi-language support*
 
 ## Tech Stack
 
